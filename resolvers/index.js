@@ -1,0 +1,3 @@
+/*
+Should export a root object which declares all resolving functionality
+ */
