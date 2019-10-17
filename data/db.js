@@ -5,7 +5,7 @@ The connection to the MongoDB database. The database should be accessible via th
 // const basketballFieldSchema = require('../models/BasketballField');
 const pickupGameSchema = require('../models/PickupGame');
 const playerSchema = require('../models/Player');
-const signupPlayer =require('../models/SignupPlayer');
+const signupPlayerSchema =require('../models/SignupPlayer');
 
 const mongoose = require('mongoose');
 

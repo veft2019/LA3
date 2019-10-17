@@ -1,11 +1,10 @@
 const { ApolloServer } = require('apollo-server');
 const typeDefs = require('./schema');
+const resolvers = require('./resolvers');
 
 const server = new ApolloServer({
-    typeDefs
-    /*
-        Add resolvers
-    */
+    typeDefs,
+    resolvers
    // For the database should use some context auth see the project description
 });
 

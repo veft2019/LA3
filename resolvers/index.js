@@ -1,3 +1,11 @@
-/*
-Should export a root object which declares all resolving functionality
- */
+const playerResolver = require('./playerResolver');
+
+module.exports = {
+    Query: {
+        ...playerResolver.queries
+    },
+    Mutation: {
+        ...playerResolver.mutations
+    }
+    //types
+};
