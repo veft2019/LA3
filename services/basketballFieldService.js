@@ -7,15 +7,11 @@ const data = request.get('https://basketball-fields.herokuapp.com/api/basketball
     if(err) {
         return console.log(err);
     }
-    console.log(body);
     return body;
 })
 
 const fieldById = (id) => {
-    const blaa = data.response.body.find(s => s.id === id);
-    console.log(blaa);
-    return blaa;
-    
+    return data.response.body.find(s => s.id === id);
 }
 
 module.exports = {
