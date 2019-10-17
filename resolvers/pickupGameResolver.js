@@ -16,8 +16,9 @@ Should resolve a subset of the GraphQL schema for the pickup game
             const pickGame = {
                 start: args.input.start,
                 end: args.input.end,
-                location: await basketballFields.fieldById_db(parent.basketballFieldId), //not working
+                //location: await basketballFields.fieldById_db(parent.basketballFieldId), //not working
                 host: await db.Player.findById(args.input.hostId)
+                //finna gæjann sem á host id í player gagnagrunni 
 
             }
             console.log(args);
