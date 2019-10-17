@@ -1,13 +1,16 @@
 const playerResolver = require('./playerResolver');
-const basketResolver = require('./basketballFieldResolver');
+const pickupGameResolver = require('./pickupGameResolver');
+const basketBallResolver = require('./basketballFieldResolver');
 
 module.exports = {
     Query: {
+        ...pickupGameResolver.queries,
         ...playerResolver.queries,
-        ...basketResolver.queries
+        ...basketBallResolver.queries
     },
     Mutation: {
+        ...pickupGameResolver.mutations,
         ...playerResolver.mutations
-    }
-    //types
+    },
+    ...pickupGameResolver.types
 };
