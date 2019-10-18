@@ -11,7 +11,7 @@ module.exports = {
         pickupGame: async (parent, args, { db }) => { 
             const result = await db.PickupGame.findById(args.id); 
             if(result == null) {
-                throw new errors.NotFoundError();
+                throw new errors.NotFoundError("Pickup game with this id was not found!");
             }
             else {
                 return result;
@@ -27,16 +27,15 @@ module.exports = {
                 hostId: args.input.hostId
             }
 
-            //moment.locale('is');
             const startTimeMoment = moment(args.input.start.value);
             const endTimeMoment = moment(args.input.end.value);
             
-            //TODO:
             //Check if the hostid points to an existing player as well
             const hostPlayer = await db.Player.findById(pickupGame.hostId);
             if(hostPlayer == null) {
                 throw new errors.NotFoundError("HostId: Player with this id was not found!")
             }
+
             //Check first if the basketballFieldId points to an existing thing
             const field = await basketballFields.fieldById(pickupGame.basketballFieldId);
             if(field == null) {
@@ -44,40 +43,53 @@ module.exports = {
             }
 
             //If the basketballField exists, check if its closed, which it may not be to continue
-            console.log("field");
-            console.log(field);
-            console.log("field status");
-            console.log(field.status);
-            console.log("field status type");
-            console.log(typeof(field.status));
             if(field.status == "CLOSED") {
-                throw new errors.BasketballFieldClosedError();
+                throw new errors.BasketballFieldClosedError("This basketball field has been marked closed!");
             }
 
-            //Check if:
-                //Game start date is before game end date (NOT ALLOWED)
-            if(startTimeMoment.isBefore(endTimeMoment)) {
+            //Check if game start date is before game end date (NOT ALLOWED)
+            if(!startTimeMoment.isBefore(endTimeMoment)) {
                 throw new errors.UserInputError("Start time may not be before end time!");
             }
-                //Difference between start and end date is less than 5 minutes or longer than 2 hours
-            const diffTime = startTimeMoment.diff(endTimeMoment, 'minutes');
+            
+            //Check if difference between start and end date is less than 5 minutes or longer than 2 hours
+            const diffTime = endTimeMoment.diff(startTimeMoment, 'minutes');
             if(diffTime > 120 || diffTime < 5) {
                 throw new errors.UserInputError("Games can not be under 5 minutes or over 2 hours!");
             }
-                //Game may not start in the past (Date.now probably)
+            
+            //Check if game may not start in the past (Date.now probably)
             if(startTimeMoment.isBefore(moment())) {
                 throw new errors.UserInputError("You cannot schedule games in the past!");
             }
 
             //Check if there is another pickupGame at the same time on the same field (Overlap)
-            
+            const allUpcomingPickupGames = (await db.PickupGame.find({})).filter(g => g.deleted === false);
+            allUpcomingPickupGames.forEach(game => {
+                //Are the games on the same field?
+                console.log("game");
+                console.log(game.basketballFieldId);
+                console.log(pickupGame.basketballFieldId);
+                
+                if(game.basketballFieldId == pickupGame.basketballFieldId) {
+                    console.log("SAME FIELD FOUND!");
+                    //console.log(game.location.id);
+                    //console.log(pickupGame.basketballFieldId);
+                    if(!startTimeMoment.isAfter(moment(game.end)) || 
+                       !endTimeMoment.isBefore(moment(game.start))) {
+                            console.log("OVERLAP!!!");
+                            throw new errors.PickupGameOverlapError("Overlap! Game already registered at this time on this field!");
+                    }
+                }
+            });
+            /*
             const results = await db.PickupGame.create(pickupGame);
             
             //Add host as the first registered player and add this game to the hosts played games
             await db.PickupGame.findByIdAndUpdate(results.id, { $push: { registeredPlayers: args.input.hostId } }, {new: true} )
             await db.Player.findByIdAndUpdate(args.input.hostId, { $push: { playedGames: results.id } }, {new: true});
             
-            return results;
+            return results;*/
         },
         removePickupGame: async (parent, args, { db }) => {
             const gameToRemove = await db.PickupGame.findByIdAndUpdate(args.id, { deleted: true }, {new: true })
@@ -94,13 +106,10 @@ module.exports = {
             const field = await basketballFields.fieldById(game.basketballFieldId);
 
             if(field.capacity <= game.registeredPlayers.length) {
-                console.log("Capacity for this game has been reached");
-                throw new errors.PickupGameExceedMaximumError()
+                throw new errors.PickupGameExceedMaximumError("Capacity for this game has been reached")
             }
             if(game.registeredPlayers.includes(args.input.playerId)) {
-                //Dont add the player, maybe throw error?
-                console.log("Player already exists if statement");
-                throw new errors.NotFoundError();
+                throw new errors.NotFoundError("Player already exists if statement");
             }
             else {
                 const result = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, { $push: { registeredPlayers: args.input.playerId } }, {new: true} )
