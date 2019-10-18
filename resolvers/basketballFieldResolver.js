@@ -12,9 +12,7 @@ module.exports = {
             if(result == null) {
                 throw new errors.NotFoundError();
             }
-            else {
-                return result;
-            }
+            return result;
         }
     },
     types: {

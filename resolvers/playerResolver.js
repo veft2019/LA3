@@ -12,7 +12,6 @@ module.exports = {
                 return player;
             }
             else {
-                //Throw error
                 throw new errors.NotFoundError();
             }
         }
@@ -20,14 +19,23 @@ module.exports = {
     mutations: {
         createPlayer: async (parent, args, { db }) => {
             const result = await db.Player.create(args.input);
+            if(result == null) {
+                throw new errors.NotFoundError();
+            }
             return result;
         },
         updatePlayer: async (parent, args, { db }) => {
             const player = await db.Player.findByIdAndUpdate(args.id, { name: args.name }, { new: true });
+            if(player == null) {
+                throw new errors.NotFoundError();
+            }
             return player;
         },
         removePlayer: async (parent, args, { db }) => {
-            await db.Player.findByIdAndUpdate(args.id, { deleted: true }, { new: true });
+            const playerToRemove = await db.Player.findByIdAndUpdate(args.id, { deleted: true }, { new: true });
+            if(playerToRemove == null) {
+                throw new errors.NotFoundError();
+            }
             return true;
         }
     },

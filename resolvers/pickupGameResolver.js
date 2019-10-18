@@ -11,11 +11,9 @@ module.exports = {
         pickupGame: async (parent, args, { db }) => {
             const result = await db.PickupGame.findById(args.id);
             if(result == null) {
-                throw new errors.NotFoundError();
+                throw new errors.NotFoundError("Pickup game with this id was not found!");
             }
-            else {
-                return result;
-            }
+            return result;
         }
     },
     mutations: {
@@ -27,49 +25,52 @@ module.exports = {
                 hostId: args.input.hostId
             }
 
-            moment.locale('is');
-            const startTimeMoment = moment(args.input.start.value, 'llll', false);
-            const endTimeMoment = moment(args.input.start.value, 'llll', false);
+            const startTimeMoment = moment(args.input.start.value);
+            const endTimeMoment = moment(args.input.end.value);
 
-            //TODO:
-            //Check if the hostid points to an existing player as well
+            // A mutation which accepts an id as a field argument must check whether the resource with the provided id exists
             const hostPlayer = await db.Player.findById(pickupGame.hostId);
             if(hostPlayer == null) {
                 throw new errors.NotFoundError("HostId: Player with this id was not found!")
             }
-            //Check first if the basketballFieldId points to an existing thing
+
+            // A mutation which accepts an id as a field argument must check whether the resource with the provided id exists
             const field = await basketballFields.fieldById(pickupGame.basketballFieldId);
             if(field == null) {
                 throw new errors.NotFoundError("BasketballFieldId: Basketall field with this id was not found!");
             }
 
-            //If the basketballField exists, check if its closed, which it may not be to continue
-            console.log("field");
-            console.log(field);
-            console.log("field status");
-            console.log(field.status);
-            console.log("field status type");
-            console.log(typeof(field.status));
+            // Pickup games cannot be added to a basketball field which has a status of closed
             if(field.status == "CLOSED") {
-                throw new errors.BasketballFieldClosedError();
+                throw new errors.BasketballFieldClosedError("This basketball field has been marked closed!");
             }
 
-            //Check if:
-                //Game start date is before game end date (NOT ALLOWED)
-            if(startTimeMoment.isBefore(endTimeMoment)) {
+            // Pickup games that have an end date which comes before the start date cannot be created
+            if(!startTimeMoment.isBefore(endTimeMoment)) {
                 throw new errors.UserInputError("Start time may not be before end time!");
             }
-                //Difference between start and end date is less than 5 minutes or longer than 2 hours
-            const diffTime = startTimeMoment.diff(endTimeMoment, 'minutes');
-            if(diffTime > 120 || diffTime < 5) {
-                throw new errors.UserInputError("Games can not be under 5 minutes or over 2 hours!");
-            }
-                //Game may not start in the past (Date.now probably)
+
             if(startTimeMoment.isBefore(moment())) {
                 throw new errors.UserInputError("You cannot schedule games in the past!");
             }
 
-            //Check if there is another pickupGame at the same time on the same field (Overlap)
+            // Pickup games can be at max 2 hours, but a minimum of 5 minutes
+            const diffTime = endTimeMoment.diff(startTimeMoment, 'minutes');
+            if(diffTime > 120 || diffTime < 5) {
+                throw new errors.UserInputError("Games can not be under 5 minutes or over 2 hours!");
+            }
+
+            // Pickup games cannot overlap if they are being played in the same basketball field
+            const allUpcomingPickupGames = (await db.PickupGame.find({})).filter(g => g.deleted === false);
+            allUpcomingPickupGames.forEach(game => {
+                if(game.basketballFieldId == pickupGame.basketballFieldId) {
+                    if(!startTimeMoment.isAfter(moment(game.end)) ||
+                       !endTimeMoment.isBefore(moment(game.start))) {
+                            console.log("OVERLAP!!!");
+                            throw new errors.PickupGameOverlapError("Overlap! Game already registered at this time on this field!");
+                    }
+                }
+            });
 
             const results = await db.PickupGame.create(pickupGame);
 
@@ -84,29 +85,62 @@ module.exports = {
             return true;
         },
         addPlayerToPickupGame: async (parent, args, { db }) => {
+
+            // Check whether the resource with the provided id exists
             const player = await db.Player.findById(args.input.playerId);
-            //TODO:
-            //Check if player exists
-            //Check if this pickupGame is already over (date.now probably or moment())
-
-            const game = await db.PickupGame.findById(args.input.pickupGameId);
-
-            const field = await basketballFields.fieldById(game.basketballFieldId);
-
-            if(field.capacity <= game.registeredPlayers.length) {
-                console.log("Capacity for this game has been reached");
-                throw new errors.PickupGameExceedMaximumError()
-            }
-            if(game.registeredPlayers.includes(args.input.playerId)) {
-                //Dont add the player, maybe throw error?
-                console.log("Player already exists if statement");
+            if(player == null) {
                 throw new errors.NotFoundError();
             }
-            else {
-                const result = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, { $push: { registeredPlayers: args.input.playerId } }, {new: true} )
-                await db.Player.findByIdAndUpdate(args.input.playerId, { $push: { playedGames: result.id } }, {new: true});
-                return result;
+
+            // Check whether the resource with the provided id exists
+            const game = await db.PickupGame.findById(args.input.pickupGameId);
+            if(game == null) {
+                throw new errors.NotFoundError();
             }
+
+            // Check whether the resource with the provided id exists
+            const field = await basketballFields.fieldById(game.basketballFieldId);
+            if(field == null) {
+                throw new errors.NotFoundError();
+            }
+
+            // Check if game is full or not
+            if(field.capacity <= game.registeredPlayers.length) {
+                throw new errors.PickupGameExceedMaximumError("This game is full");
+            }
+
+            // Check if player is already registerd in the game
+            if(game.registeredPlayers.includes(args.input.playerId)) {
+                throw new errors.UserInputError("Player is already registerd");
+            }
+
+            const startTimeMoment = moment(game.start);
+            const endTimeMoment = moment(game.end);
+            const now = moment();
+
+            // Check if the game has already passed
+            if(endTimeMoment.isBefore(now)) {
+                throw new errors.PickupGameAlreadyPassedError();
+            }
+
+            // Check if the user is aldready signed up for a game at the same time
+            const allGames = (await db.PickupGame.find({})).filter(g => g.deleted === false);
+            allGames.forEach(g => {
+                if(g.registeredPlayers.includes(args.input.playerId)) {
+                    const gameIStart = moment(g.start);
+                    const gameIEnd = moment(g.end);
+                    if(!startTimeMoment.isAfter(gameIEnd) || !endTimeMoment.isBefore(gameIStart)) {
+                        throw new errors.PickupGameOverlapError("This user is already signed up for a game at this time");
+                    }
+                }
+            })
+
+            // Add player to a specific pickup game
+            const result = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, { $push: { registeredPlayers: args.input.playerId } }, {new: true} )
+            await db.Player.findByIdAndUpdate(args.input.playerId, { $push: { playedGames: result.id } }, {new: true});
+
+            return result;
+
         },
         removePlayerFromPickupGame: async (parent, args, { db }) => {
             const player = await db.Player.findById(args.input.playerId);
