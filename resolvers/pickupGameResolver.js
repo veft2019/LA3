@@ -31,6 +31,12 @@
             const playerId = await db.Player.findById(args.input.playerId); 
             const result = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, { $push: { registeredPlayers: args.input.playerId } }, {new: true} )
             return result;
+        },
+        removePlayerFromPickupGame: async (parent, args, { db }) => {
+            const playerId = await db.Player.findById(args.input.playerId);
+            const pickupGameId = await db.PickupGame.fieldById(args.input.pickupGameId); 
+            const result = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, {$pull: {registerdPlayers: args.input.playerId}}, {new: true} )
+            return result;
         }
      },
      types: {
@@ -40,14 +46,7 @@
             registeredPlayers: async (parent, args, { db }) => {
                 const final = [];
                 const players = await db.Player.find({});
-                /*
-                console.log("Players!: ");
-                console.log(players);
-                console.log("Players done");
-                console.log("Parent!: ");
-                console.log(parent.registeredPlayers);
-                console.log("Parent done");
-                */
+                
                 parent.registeredPlayers.forEach(pId => {
                     players.forEach( p => {
                         console.log(pId);
@@ -57,13 +56,8 @@
                         }
                     })
                 });
-                /*
-                console.log("Res: ");
-                console.log(final);
-                */
                return final;
             }
         }
-     }
-    
- }
+    }
+}
