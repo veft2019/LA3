@@ -5,8 +5,8 @@
 
  module.exports = {
      queries: {
-         allPickupGames: () => db.PickupGame.find({}),
-         pickupGame: (parent, args) => db.PickupGame.findById(args.id)
+         allPickupGames: async () => await db.PickupGame.find({}),
+         pickupGame: async (parent, args) => await db.PickupGame.findById(args.id)
      },
      mutations: {
        createPickupGame: async (parent, args) => {
@@ -19,8 +19,8 @@
             const results = await db.PickupGame.create(pickupGame);
             return results;
         },
-        removePickupGame: (parent, args) => {
-            const gameToRemove = db.PickupGame.findOneAndUpdate(args.id, {delete: true}, {new: true })
+        removePickupGame: async (parent, args) => {
+            const gameToRemove = await db.PickupGame.findOneAndUpdate(args.id, {delete: true}, {new: true })
             return true;
         },
         addPlayerToPickupGame: async (parent, args) => {
