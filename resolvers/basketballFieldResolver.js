@@ -4,19 +4,16 @@ const errors = require("../errors");
 module.exports = {
     queries: {
         allBasketballFields: async (parent, args) => {
-            const fields = await _data.basketBallField_db.response.body;
-            console.log(args);
-            return fields.filter(f => f.status == args.status);
+            const results = await _data.basketBallField_db.response.body;
+            return results.filter(f => f.status == args.status);
         },
         basketballField: async (parent, args) => {
-            const field = await _data.fieldById(args.id);
-            if(field == null) {
-                // if field was not found by field argument
-                // throw NotFoundError
+            const result = await _data.fieldById(args.id);
+            if(result == null) {
                 throw new errors.NotFoundError();
             }
             else {
-                return field;
+                return result;
             }
         }
     },
@@ -24,9 +21,8 @@ module.exports = {
         BasketballField: {
             pickupGames: async (parent, args, { db }) =>  {
                 const pickupGames = [];
-                const result = await db.PickupGame.find({});
-                // Go through each  and find corresponding player in database
-                result.forEach(game => {
+                const allGames = await db.PickupGame.find({});
+                allGames.forEach(game => {
                     if(game.basketballFieldId == parent.id) {
                         pickupGames.push(game);
                     }
