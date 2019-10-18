@@ -1,17 +1,16 @@
- //const db = require('../data/db');
- const errors = require('../errors'); 
- const basketballFields = require('../services/basketballFieldService');
+const errors = require('../errors'); 
+const basketballFields = require('../services/basketballFieldService');
 
 
- module.exports = {
-     queries: {
+module.exports = {
+    queries: {
         allPickupGames: async (parent, args, { db }) => {
            const pickupGames = (await db.PickupGame.find({})).filter(g => g.deleted === false);
            return pickupGames;
         },
         pickupGame: async (parent, args, { db }) => await db.PickupGame.findById(args.id)
-     },
-     mutations: {
+    },
+    mutations: {
         createPickupGame: async (parent, args, { db }) => {
             console.log(args);
             const pickupGame = {
@@ -30,6 +29,7 @@
         addPlayerToPickupGame: async (parent, args, { db }) => {
             const playerId = await db.Player.findById(args.input.playerId); 
             const result = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, { $push: { registeredPlayers: args.input.playerId } }, {new: true} )
+            await db.Player.findByIdAndUpdate(args.input.playerId, { $push: { playedGames: args.input.playerId } }, {new: true});
             return result;
         },
         removePlayerFromPickupGame: async (parent, args, { db }) => {
@@ -38,8 +38,8 @@
             const result = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, { $pull: { registeredPlayers: args.input.playerId } }, {new: true} )
             return true;
         }
-     },
-     types: {
+    },
+    types: {
         PickupGame: {
             location: async (parent, args, { db }) => await basketballFields.fieldById(parent.basketballFieldId),
             host: async (parent, args, { db }) => await db.Player.findById(parent.hostId),

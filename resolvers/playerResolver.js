@@ -30,5 +30,21 @@ module.exports = {
             await db.Player.findByIdAndUpdate(args.id, { deleted: true }, { new: true });
             return true;
         }
+    },
+    types: {
+        Player: {
+            playedGames: async (parent, args, { db }) => {
+                const playedGames = [];
+                const allGames = await db.PickupGame.find({});
+                parent.playedGames.forEach(gameId => {
+                    allGames.forEach(game => {
+                        if(gameId == game.id) {
+                            playedGames.push(game);
+                        }
+                    })
+                });
+                return playedGames;
+            }
+        }
     }
 }
