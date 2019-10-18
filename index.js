@@ -1,11 +1,14 @@
 const { ApolloServer } = require('apollo-server');
 const typeDefs = require('./schema');
 const resolvers = require('./resolvers');
+const mongooseDb = require('./data/db');
 
 const server = new ApolloServer({
     typeDefs,
-    resolvers
-   // For the database should use some context auth see the project description
+    resolvers,
+    context: async () => ({
+        db: mongooseDb
+    })
 });
 
 server.listen()
