@@ -86,27 +86,30 @@ module.exports = {
         addPlayerToPickupGame: async (parent, args, { db }) => {
             const player = await db.Player.findById(args.input.playerId);
             if(player == null) {
-                throw new errors.NotFoundError();
+                throw new errors.NotFoundError(); //TESTED OK
             }
 
             const game = await db.PickupGame.findById(args.input.pickupGameId);
-
-            const field = await basketballFields.fieldById(game.basketballFieldId);
-
+            if(game == null) {
+                throw new errors.NotFoundError();
+            }
+            const field = await basketballFields.fieldById(game.basketballFieldId); 
+            if(field == null) {
+                throw new errors.NotFoundError();
+            }
+           
             if(field.capacity <= game.registeredPlayers.length) {
-                console.log("Capacity for this game has been reached");
-                throw new errors.PickupGameExceedMaximumError()
-            }
-            if(game.registeredPlayers.includes(args.input.playerId)) {
-                //Dont add the player, maybe throw error?
-                console.log("Player is already registerd");
-                throw new errors.UserInputError();
+                throw new errors.PickupGameExceedMaximumError("This game is full");
             }
 
-            //endtimeMoment.isBefore(moment())
-            startTimeMoment.isBefore(moment()) 
-            if() {
-                console.log("Pickup game has already passed")
+            if(game.registeredPlayers.includes(args.input.playerId)) { // TESTED OK
+                throw new errors.UserInputError("Player is already registerd");
+            }
+            
+            console.log(game);
+            const endTimeMoment = moment(game.end); // TESTED NOT OK 
+            const now = moment();
+            if(endTimeMoment.isBefore(now)) {
                 throw new errors.PickupGameAlreadyPassedError();
             }
             else {
@@ -114,8 +117,6 @@ module.exports = {
                 await db.Player.findByIdAndUpdate(args.input.playerId, { $push: { playedGames: result.id } }, {new: true});
                 return result;
             }
-
-
         },
         removePlayerFromPickupGame: async (parent, args, { db }) => {
             //TODO:
