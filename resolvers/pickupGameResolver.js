@@ -87,19 +87,31 @@ module.exports = {
         },
         addPlayerToPickupGame: async (parent, args, { db }) => {
             const player = await db.Player.findById(args.input.playerId);
-            //TODO: 
-            //Check if player exists
-            //Check if this pickupGame is already over (date.now probably or moment())
+            if(player == null) {
+                throw new errors.NotFoundError(); //TESTED OK
+            }
 
             const game = await db.PickupGame.findById(args.input.pickupGameId);
-
-            const field = await basketballFields.fieldById(game.basketballFieldId);
-
-            if(field.capacity <= game.registeredPlayers.length) {
-                throw new errors.PickupGameExceedMaximumError("Capacity for this game has been reached")
+            if(game == null) {
+                throw new errors.NotFoundError();
             }
-            if(game.registeredPlayers.includes(args.input.playerId)) {
-                throw new errors.NotFoundError("Player already exists if statement");
+            const field = await basketballFields.fieldById(game.basketballFieldId); 
+            if(field == null) {
+                throw new errors.NotFoundError();
+            }
+           
+            if(field.capacity <= game.registeredPlayers.length) {
+                throw new errors.PickupGameExceedMaximumError("This game is full");
+            }
+
+            if(game.registeredPlayers.includes(args.input.playerId)) { 
+                throw new errors.UserInputError("Player is already registerd");
+            }
+            
+            const endTimeMoment = moment(game.end); 
+            const now = moment();
+            if(endTimeMoment.isBefore(now)) {
+                throw new errors.PickupGameAlreadyPassedError();
             }
             else {
                 const result = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, { $push: { registeredPlayers: args.input.playerId } }, {new: true} )
