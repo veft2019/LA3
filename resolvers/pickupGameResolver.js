@@ -9,7 +9,8 @@ module.exports = {
             return results;
         },
         pickupGame: async (parent, args, { db }) => { 
-            const result = await db.PickupGame.findById(args.id); 
+            const result = await db.PickupGame.findById(args.id);
+            // Check whether the resource with the provided id exists 
             if(result == null) {
                 throw new errors.NotFoundError("Pickup game with this id was not found!");
             }
@@ -87,35 +88,45 @@ module.exports = {
             return true;
         },
         addPlayerToPickupGame: async (parent, args, { db }) => {
+            
+            //Accepts an id as a player argument, check whether the resource with the provided id exists
             const player = await db.Player.findById(args.input.playerId);
             if(player == null) {
                 throw new errors.NotFoundError(); 
             }
 
+            // Accepts an id as a game argument, check whether the resource with the provided id exists
             const game = await db.PickupGame.findById(args.input.pickupGameId);
             if(game == null) {
                 throw new errors.NotFoundError();
             }
 
+            // Accepts an id as a field argument, check whether the resource with the provided id exists
             const field = await basketballFields.fieldById(game.basketballFieldId); 
             if(field == null) {
                 throw new errors.NotFoundError();
             }
 
+            // Check if game is full or not 
             if(field.capacity <= game.registeredPlayers.length) {
                 throw new errors.PickupGameExceedMaximumError("This game is full");
             }
 
+            // Check if player is already registerd in the game 
             if(game.registeredPlayers.includes(args.input.playerId)) { 
                 throw new errors.UserInputError("Player is already registerd");
             }
+
             const startTimeMoment = moment(game.start);
             const endTimeMoment = moment(game.end); 
             const now = moment();
+
+            // Check if the game has already passed
             if(endTimeMoment.isBefore(now)) {
                 throw new errors.PickupGameAlreadyPassedError();
             }
         
+            // Check if the user is aldready signed up for a game at the same time
             const allGames = (await db.PickupGame.find({})).filter(g => g.deleted === false);
             allGames.forEach(g => {
                 if(g.registeredPlayers.includes(args.input.playerId)) {
@@ -127,8 +138,10 @@ module.exports = {
                 }
             })
 
+            // Add player to a specific pickup game
             const result = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, { $push: { registeredPlayers: args.input.playerId } }, {new: true} )
             await db.Player.findByIdAndUpdate(args.input.playerId, { $push: { playedGames: result.id } }, {new: true});
+            
             return result;
             
         },
