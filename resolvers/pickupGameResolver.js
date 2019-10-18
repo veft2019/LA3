@@ -1,4 +1,4 @@
-const errors = require('../errors'); 
+const errors = require('../errors');
 const basketballFields = require('../services/basketballFieldService');
 var moment = require('moment');
 
@@ -8,8 +8,8 @@ module.exports = {
             const results = (await db.PickupGame.find({})).filter(g => g.deleted === false);
             return results;
         },
-        pickupGame: async (parent, args, { db }) => { 
-            const result = await db.PickupGame.findById(args.id); 
+        pickupGame: async (parent, args, { db }) => {
+            const result = await db.PickupGame.findById(args.id);
             if(result == null) {
                 throw new errors.NotFoundError();
             }
@@ -72,11 +72,11 @@ module.exports = {
             //Check if there is another pickupGame at the same time on the same field (Overlap)
 
             const results = await db.PickupGame.create(pickupGame);
-            
+
             //Add host as the first registered player and add this game to the hosts played games
             await db.PickupGame.findByIdAndUpdate(results.id, { $push: { registeredPlayers: args.input.hostId } }, {new: true} )
             await db.Player.findByIdAndUpdate(args.input.hostId, { $push: { playedGames: results.id } }, {new: true});
-            
+
             return results;
         },
         removePickupGame: async (parent, args, { db }) => {
@@ -85,7 +85,7 @@ module.exports = {
         },
         addPlayerToPickupGame: async (parent, args, { db }) => {
             const player = await db.Player.findById(args.input.playerId);
-            //TODO: 
+            //TODO:
             //Check if player exists
             //Check if this pickupGame is already over (date.now probably or moment())
 
@@ -109,16 +109,58 @@ module.exports = {
             }
         },
         removePlayerFromPickupGame: async (parent, args, { db }) => {
-            //TODO:
-            //Check if pickupGame has passed, in whic case, we are not allowed to remove the players from it
-            //Check if you just removed the host from the game, in which case, pick the next alphabetical player in the 
-            //registered players list and make him the host
-            //If there are no registered players when the host is removed, mark the pickup game as deleted
             const player = await db.Player.findById(args.input.playerId);
             const pickupGame = await db.PickupGame.findById(args.input.pickupGameId);
+            var playersInfo = [];
+            var playerNames = [];
+            var now = moment(); // Get the current date and time
 
-            const result = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, { $pull: { registeredPlayers: args.input.playerId } }, {new: true} )
-            return true;
+            if(player == null) {
+                throw new errors.NotFoundError("No Player found with this ID");
+            }
+            if(pickupGame == null) {
+                throw new errors.NotFoundError("No Pickup Game found with this ID");
+            }
+            if(moment(pickupGame.end).isBefore(now)) {
+                throw new errors.PickupGameAlreadyPassedError("Not possible to remove player from expired pick up games");
+            }
+            if(player.id == pickupGame.hostId) {
+                const newGame = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, { $pull: { registeredPlayers: args.input.playerId } }, {new: true} );
+
+                // Mark game as deleted
+                if(newGame.registeredPlayers.length == 0) {
+                    await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, { deleted: true }, {new: true} );
+                }
+                const playerObj = [];
+                const allUsers = (await db.Player.find({})).filter(p => p.deleted === false);
+
+                newGame.registeredPlayers.forEach( p => {
+                    allUsers.forEach( a => {
+                        if(p == a.id) {
+                            playerObj.push({ name: a.name, id: a.id });
+                        }
+                    });
+                });
+
+                const compare = (a, b) => {
+                  if ( a.name < b.name ){
+                    return -1;
+                  }
+                  if ( a.name > b.name ){
+                    return 1;
+                  }
+                  return 0;
+                }
+
+                playerObj.sort(compare);
+                const x = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, { hostId: playerObj[0].id }, {new: true} );
+                return true;
+
+            }
+            else {
+                const result = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, { $pull: { registeredPlayers: args.input.playerId } }, {new: true} )
+                return true;
+            }
         }
     },
     types: {
@@ -128,7 +170,7 @@ module.exports = {
             registeredPlayers: async (parent, args, { db }) => {
                 const playersInGame = [];
                 const allPlayers = await db.Player.find({});
-                
+
                 parent.registeredPlayers.forEach(playerIds => {
                     allPlayers.forEach(playerObj => {
                         if(playerIds == playerObj.id) {
