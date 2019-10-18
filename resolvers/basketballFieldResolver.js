@@ -6,12 +6,12 @@ const _data = require('../services/basketballFieldService');
 
 module.exports = {
     queries: {
-      allBasketballFields: (parent, args) => {
-          const temp = _data.basketBallField_db.response.body;
-          return temp.filter(x => x.status == args.status);
+      allBasketballFields: async (parent, args) => {
+          const fields = await _data.basketBallField_db.response.body;
+          return fields.filter(f => f.status == args.status);
       },
-      basketballField: (parent, args) => {
-          return _data.fieldById(args.id);
+      basketballField: async (parent, args) => {
+          return await _data.fieldById(args.id);
       }
     }
 };

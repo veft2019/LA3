@@ -3,20 +3,32 @@ const errors = require("../errors");
 
 module.exports = {
     queries: {
-        allPlayers: async () => { const players = await db.Player.find({}); return players /*console.log(players); players.where(x => x.deleted == false)*/ },
-        player: (parent, args) => db.Player.findById(args.id)
+        allPlayers: async () => { 
+            const players = (await db.Player.find({})).filter(p => p.deleted === false);
+            return players;
+        },
+        player: async (parent, args) => { 
+            const player = await db.Player.findById(args.id);
+            if(!player.deleted) {
+                return player;
+            }
+            else {
+                //Throw error
+                throw new errors.NotFoundError();
+            }
+        }
     },
     mutations: {
-        createPlayer: (parent, args) => {
-            const result = db.Player.create(args.input);
+        createPlayer: async (parent, args) => {
+            const result = await db.Player.create(args.input);
             return result;
         },
-        updatePlayer: (parent, args) => {
-            const player = db.Player.findByIdAndUpdate(args.id, { name: args.name }, { new: true });
+        updatePlayer: async (parent, args) => {
+            const player = await db.Player.findByIdAndUpdate(args.id, { name: args.name }, { new: true });
             return player;
         },
-        removePlayer: (parent, args) => {
-            db.Player.findByIdAndUpdate(args.id, { deleted: true }, { new: true });
+        removePlayer: async (parent, args) => {
+            await db.Player.findByIdAndUpdate(args.id, { deleted: true }, { new: true });
             return true;
         }
         //removePlayerFromPickupGame - unsure if this should be here or in pickupgame
