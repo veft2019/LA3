@@ -24,12 +24,12 @@
             return results;
         },
         removePickupGame: async (parent, args, { db }) => {
-            const gameToRemove = await db.PickupGame.findOneAndUpdate(args.id, { deleted: true }, {new: true })
+            const gameToRemove = await db.PickupGame.findByIdAndUpdate(args.id, { deleted: true }, {new: true })
             return true;
         },
         addPlayerToPickupGame: async (parent, args, { db }) => {
             const playerId = await db.Player.findById(args.input.playerId); 
-            const result = await db.PickupGame.findOneAndUpdate(args.input.pickupGameId, { $push: {registeredPlayers: args.input.playerId} }, {new: true} )
+            const result = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, { $push: { registeredPlayers: args.input.playerId } }, {new: true} )
             return result;
         }
      },
