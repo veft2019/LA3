@@ -1,7 +1,3 @@
-/*
-Should resolve a subset of the GraphQL schema for the pickup game
- */
-
  const db = require('../data/db');
  const errors = require('../errors'); 
  const basketballFields = require('../services/basketballFieldService');
@@ -14,29 +10,24 @@ Should resolve a subset of the GraphQL schema for the pickup game
      },
      mutations: {
        createPickupGame: async (parent, args) => {
-            const pickGame = {
+            const pickupGame = {
                 start: args.input.start,
                 end: args.input.end,
-                location: await basketballFields.fieldById(args.input.basketballFieldId), //not working
+                location: await basketballFields.fieldById(args.input.basketballFieldId), 
                 host: await db.Player.findById(args.input.hostId)
-                //finna gæjann sem á host id í player gagnagrunni 
             }
-            console.log(args);
-            const results = await db.PickupGame.create(pickGame);
-            console.log(results);
+            const results = await db.PickupGame.create(pickupGame);
             return results;
         },
         removePickupGame: (parent, args) => {
             const gameToRemove = db.PickupGame.findOneAndUpdate(args.id, {delete: true}, {new: true })
-            return gameToRemove;
+            return true;
+        },
+        addPlayerToPickupGame: async (parent, args) => {
+            const playerId = await db.Player.findById(args.input.playerId); 
+            const result = await db.PickupGame.findOneAndUpdate(args.input.pickupGameId, {$push: {registerdPlayers: playerId}}, {new: true} )
+            return result;
         }
-     },
-     types: { //resolvea
-         /*PickupGame: {
-             host: parent => db.Player.findById(parent.hostId),
-             location: parent => basketballFields.fieldById_db(parent.basketballFieldId)
-         }*/
      }
-
-
+    
  }
