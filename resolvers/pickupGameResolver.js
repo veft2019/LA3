@@ -5,7 +5,10 @@
 
  module.exports = {
      queries: {
-         allPickupGames: async (parent, args, { db }) => await db.PickupGame.find({}),
+         allPickupGames: async (parent, args, { db }) => {
+           const pickupGames = (await db.PickupGame.find({})).filter(g => g.deleted === false);
+           return pickupGames;
+         },
          pickupGame: async (parent, args, { db }) => await db.PickupGame.findById(args.id)
      },
      mutations: {
@@ -21,7 +24,7 @@
             return results;
         },
         removePickupGame: async (parent, args, { db }) => {
-            const gameToRemove = await db.PickupGame.findOneAndUpdate(args.id, {delete: true}, {new: true })
+            const gameToRemove = await db.PickupGame.findOneAndUpdate(args.id, {deleted: true}, {new: true })
             return true;
         },
         addPlayerToPickupGame: async (parent, args, { db }) => {

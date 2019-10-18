@@ -6,5 +6,6 @@ module.exports = new Schema({
     end: { type: String, required: true },
     basketballFieldId: { type: String, required: true },
     registeredPlayers: [{ type: String, required: true }],
-    hostId: { type: Schema.Types.ObjectId, ref: 'Player', required: true }
+    hostId: { type: Schema.Types.ObjectId, ref: 'Player', required: true },
+    deleted: { type: Boolean, default: false }
 });
