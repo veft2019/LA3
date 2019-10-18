@@ -85,9 +85,9 @@ module.exports = {
         },
         addPlayerToPickupGame: async (parent, args, { db }) => {
             const player = await db.Player.findById(args.input.playerId);
-            //TODO: 
-            //Check if player exists
-            //Check if this pickupGame is already over (date.now probably or moment())
+            if(player == null) {
+                throw new errors.NotFoundError();
+            }
 
             const game = await db.PickupGame.findById(args.input.pickupGameId);
 
@@ -99,14 +99,23 @@ module.exports = {
             }
             if(game.registeredPlayers.includes(args.input.playerId)) {
                 //Dont add the player, maybe throw error?
-                console.log("Player already exists if statement");
-                throw new errors.NotFoundError();
+                console.log("Player is already registerd");
+                throw new errors.UserInputError();
+            }
+
+            //endtimeMoment.isBefore(moment())
+            startTimeMoment.isBefore(moment()) 
+            if() {
+                console.log("Pickup game has already passed")
+                throw new errors.PickupGameAlreadyPassedError();
             }
             else {
                 const result = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, { $push: { registeredPlayers: args.input.playerId } }, {new: true} )
                 await db.Player.findByIdAndUpdate(args.input.playerId, { $push: { playedGames: result.id } }, {new: true});
                 return result;
             }
+
+
         },
         removePlayerFromPickupGame: async (parent, args, { db }) => {
             //TODO:
