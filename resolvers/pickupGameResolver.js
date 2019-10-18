@@ -14,9 +14,7 @@ module.exports = {
             if(result == null) {
                 throw new errors.NotFoundError("Pickup game with this id was not found!");
             }
-            else {
-                return result;
-            }
+            return result;
         }
     },
     mutations: {
@@ -89,19 +87,19 @@ module.exports = {
         },
         addPlayerToPickupGame: async (parent, args, { db }) => {
             
-            //Accepts an id as a player argument, check whether the resource with the provided id exists
+            // Check whether the resource with the provided id exists
             const player = await db.Player.findById(args.input.playerId);
             if(player == null) {
                 throw new errors.NotFoundError(); 
             }
 
-            // Accepts an id as a game argument, check whether the resource with the provided id exists
+            // Check whether the resource with the provided id exists
             const game = await db.PickupGame.findById(args.input.pickupGameId);
             if(game == null) {
                 throw new errors.NotFoundError();
             }
 
-            // Accepts an id as a field argument, check whether the resource with the provided id exists
+            // Check whether the resource with the provided id exists
             const field = await basketballFields.fieldById(game.basketballFieldId); 
             if(field == null) {
                 throw new errors.NotFoundError();
