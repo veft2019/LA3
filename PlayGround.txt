@@ -1,0 +1,111 @@
+
+# ======= QUERYS =======
+
+# Players
+query getAllPlayers {
+  allPlayers {
+    id,
+    name
+  }
+}
+
+query getAPLayer {
+  player(id: "5bd07bf7c5b9df20ea7df8e6") {
+    id,
+    name
+  }
+}
+
+
+#BasketBallFields
+query allbasket {
+  allBasketballFields(status: OPEN) {
+    id,
+    name,
+    capacity,
+    yearOfCreation,
+    status
+  }
+}
+
+query oneBasket {
+  basketballField(id:"ef42039e-77bc-40a3-8131-c2a5424ebcdb") {
+    id,
+    name,
+    capacity,
+    yearOfCreation,
+    status
+  }
+}
+
+
+
+#PickUpGames 
+query getAllPickupgames {
+  allPickupGames {
+    id
+  }
+}
+
+query getPickUpGame {
+  pickupGame(id: "5bd0be9bdd706224e814fbbf") {
+    id
+    registeredPlayers {
+      name
+    }
+  }
+}
+
+# ======= MUTATION =======
+
+# Players
+mutation createAPlayer {
+  createPlayer(input: { name: "Grétar Örn" }) {
+    id,
+    name
+  }
+}
+
+mutation updateAPlayer {
+  updatePlayer(id: "5da89abb01aaa53f045a02cd" name: "Sindro") {
+    id,
+    name
+  }
+}
+
+mutation deletePlayer {
+  removePlayer(id: "5bd07c7107416720fa49ff08")
+}
+
+
+
+# PickUpGames 
+mutation updatePickUpGames {
+  addPlayerToPickupGame(input: {
+    playerId: "5bd07bf7c5b9df20ea7df8e6",
+    pickupGameId:"5bd0be9bdd706224e814fbbf",
+  })
+  {
+    id,
+    registeredPlayers {
+      id,
+      name
+    }
+  }
+}
+
+mutation createPickUpGames {
+  createPickupGame(input: {
+    start: "12-15-2018",
+    end: "1-14-2019",
+    basketballFieldId: "1798a72b-b619-4150-b604-5de20fa3cc56",
+    hostId: "5bd07bec78912c20e6f53300"
+  })
+  {
+    id,
+    start,
+    end
+  }
+}
+
+
