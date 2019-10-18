@@ -35,8 +35,8 @@
         removePlayerFromPickupGame: async (parent, args, { db }) => {
             const playerId = await db.Player.findById(args.input.playerId);
             const pickupGameId = await db.PickupGame.findById(args.input.pickupGameId); 
-            const result = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, {$pull: {registerdPlayers: args.input.playerId}}, {new: true} )
-            return result;
+            const result = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, { $pull: { registeredPlayers: args.input.playerId } }, {new: true} )
+            return true;
         }
      },
      types: {

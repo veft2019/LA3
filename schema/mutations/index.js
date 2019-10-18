@@ -6,6 +6,6 @@ module.exports = `
         removePickupGame(id: ID!): Boolean!
         removePlayer(id: ID!): Boolean!
         addPlayerToPickupGame(input: SignupPlayerInput!): PickupGame!
-        removePlayerFromPickupGame(input: ID!): Boolean!
+        removePlayerFromPickupGame(input: SignupPlayerInput!): Boolean!
     }
 `;
