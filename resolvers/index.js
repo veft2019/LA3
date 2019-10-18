@@ -24,7 +24,8 @@ module.exports = {
         parseValue: (value) => { return value; },
         parseLiteral: (value) => { return value; },
         serialize: (value) => {
-            return moment(value).locale('is').format('llll');
+            moment.locale('is');
+            return moment(value).format('llll');
         }
     })
 };

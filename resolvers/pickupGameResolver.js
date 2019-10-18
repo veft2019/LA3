@@ -27,10 +27,10 @@ module.exports = {
                 hostId: args.input.hostId
             }
 
-            moment.locale('is');
-            const startTimeMoment = moment(args.input.start.value, 'llll', false);
-            const endTimeMoment = moment(args.input.start.value, 'llll', false);
-
+            //moment.locale('is');
+            const startTimeMoment = moment(args.input.start.value);
+            const endTimeMoment = moment(args.input.end.value);
+            
             //TODO:
             //Check if the hostid points to an existing player as well
             const hostPlayer = await db.Player.findById(pickupGame.hostId);
@@ -70,7 +70,7 @@ module.exports = {
             }
 
             //Check if there is another pickupGame at the same time on the same field (Overlap)
-
+            
             const results = await db.PickupGame.create(pickupGame);
             
             //Add host as the first registered player and add this game to the hosts played games
