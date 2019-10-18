@@ -51,6 +51,7 @@ module.exports = {
             if(!startTimeMoment.isBefore(endTimeMoment)) {
                 throw new errors.UserInputError("Start time may not be before end time!");
             }
+
             if(startTimeMoment.isBefore(moment())) {
                 throw new errors.UserInputError("You cannot schedule games in the past!");
             }
@@ -88,18 +89,19 @@ module.exports = {
         addPlayerToPickupGame: async (parent, args, { db }) => {
             const player = await db.Player.findById(args.input.playerId);
             if(player == null) {
-                throw new errors.NotFoundError(); //TESTED OK
+                throw new errors.NotFoundError(); 
             }
 
             const game = await db.PickupGame.findById(args.input.pickupGameId);
             if(game == null) {
                 throw new errors.NotFoundError();
             }
+
             const field = await basketballFields.fieldById(game.basketballFieldId); 
             if(field == null) {
                 throw new errors.NotFoundError();
             }
-           
+
             if(field.capacity <= game.registeredPlayers.length) {
                 throw new errors.PickupGameExceedMaximumError("This game is full");
             }
@@ -107,17 +109,28 @@ module.exports = {
             if(game.registeredPlayers.includes(args.input.playerId)) { 
                 throw new errors.UserInputError("Player is already registerd");
             }
-            
+            const startTimeMoment = moment(game.start);
             const endTimeMoment = moment(game.end); 
             const now = moment();
             if(endTimeMoment.isBefore(now)) {
                 throw new errors.PickupGameAlreadyPassedError();
             }
-            else {
-                const result = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, { $push: { registeredPlayers: args.input.playerId } }, {new: true} )
-                await db.Player.findByIdAndUpdate(args.input.playerId, { $push: { playedGames: result.id } }, {new: true});
-                return result;
-            }
+        
+            const allGames = (await db.PickupGame.find({})).filter(g => g.deleted === false);
+            allGames.forEach(g => {
+                if(g.registeredPlayers.includes(args.input.playerId)) {
+                    const gameIStart = moment(g.start);
+                    const gameIEnd = moment(g.end);
+                    if(!startTimeMoment.isAfter(gameIEnd) || !endTimeMoment.isBefore(gameIStart)) {
+                        throw new errors.PickupGameOverlapError("This user is already signed up for a game at this time");
+                    }
+                }
+            })
+
+            const result = await db.PickupGame.findByIdAndUpdate(args.input.pickupGameId, { $push: { registeredPlayers: args.input.playerId } }, {new: true} )
+            await db.Player.findByIdAndUpdate(args.input.playerId, { $push: { playedGames: result.id } }, {new: true});
+            return result;
+            
         },
         removePlayerFromPickupGame: async (parent, args, { db }) => {
             //TODO:
