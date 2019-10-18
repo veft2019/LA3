@@ -5,5 +5,3 @@ module.exports = `
       playedGames: [PickupGame!]!
     }
 `;
-
-// playedGames: [PickupGame]

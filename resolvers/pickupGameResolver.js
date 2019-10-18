@@ -5,15 +5,15 @@
 
  module.exports = {
      queries: {
-         allPickupGames: async (parent, args, { db }) => {
+        allPickupGames: async (parent, args, { db }) => {
            const pickupGames = (await db.PickupGame.find({})).filter(g => g.deleted === false);
            return pickupGames;
-         },
-         pickupGame: async (parent, args, { db }) => await db.PickupGame.findById(args.id)
+        },
+        pickupGame: async (parent, args, { db }) => await db.PickupGame.findById(args.id)
      },
      mutations: {
-       createPickupGame: async (parent, args, { db }) => {
-           console.log(args);
+        createPickupGame: async (parent, args, { db }) => {
+            console.log(args);
             const pickupGame = {
                 start: args.input.start.value,
                 end: args.input.end.value,
@@ -44,19 +44,17 @@
             location: async (parent, args, { db }) => await basketballFields.fieldById(parent.basketballFieldId),
             host: async (parent, args, { db }) => await db.Player.findById(parent.hostId),
             registeredPlayers: async (parent, args, { db }) => {
-                const final = [];
-                const players = await db.Player.find({});
+                const playersInGame = [];
+                const allPlayers = await db.Player.find({});
                 
-                parent.registeredPlayers.forEach(pId => {
-                    players.forEach( p => {
-                        console.log(pId);
-                        console.log(p);
-                        if(pId == p.id) {
-                            final.push(p);
+                parent.registeredPlayers.forEach(playerIds => {
+                    allPlayers.forEach(playerObj => {
+                        if(playerIds == playerObj.id) {
+                            playersInGame.push(playerObj);
                         }
                     })
                 });
-               return final;
+               return playersInGame;
             }
         }
     }

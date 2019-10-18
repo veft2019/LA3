@@ -30,6 +30,5 @@ module.exports = {
             await db.Player.findByIdAndUpdate(args.id, { deleted: true }, { new: true });
             return true;
         }
-        //removePlayerFromPickupGame - unsure if this should be here or in pickupgame
     }
 }
